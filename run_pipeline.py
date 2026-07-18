@@ -15,15 +15,23 @@ DBT_DIR = ROOT / "dbt"
 def find_dbt():
     """Locate the dbt executable even when its install directory isn't on PATH.
 
-    pip installs the dbt console-script next to the Python interpreter that
-    ran pip (Scripts/ on Windows, bin/ on macOS/Linux) -- that directory is
-    reliably known even if PATH doesn't include it.
+    pip installs the dbt console-script into a directory tied to the Python
+    interpreter that ran pip -- Scripts/ on Windows (a subfolder, NOT next to
+    python.exe itself), bin/ on macOS/Linux (alongside python there). That
+    directory is reliably known even if PATH doesn't include it.
     """
     dbt_path = shutil.which("dbt")
     if dbt_path:
         return dbt_path
-    candidate = Path(sys.executable).parent / ("dbt.exe" if os.name == "nt" else "dbt")
-    return str(candidate) if candidate.exists() else "dbt"
+    python_dir = Path(sys.executable).parent
+    candidates = [
+        python_dir / "Scripts" / "dbt.exe",  # Windows: Scripts/ subfolder
+        python_dir / "dbt",  # macOS/Linux: bin/ alongside python
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return "dbt"
 
 
 def run(cmd, cwd=None):
