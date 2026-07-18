@@ -6,7 +6,7 @@ Built as a generalized, public-data version of real reporting patterns from tele
 
 ## Status
 
-Core pipeline is implemented: data generator, DuckDB loading, dbt staging + mart models, data quality tests, and an Airflow DAG. **Not yet run in a live environment** — verify locally with the steps below before relying on it.
+Verified end-to-end locally: `python run_pipeline.py` generates the synthetic data, loads it into DuckDB, and runs `dbt run` (7/7 models built) and `dbt test` (11/11 tests passed). The Airflow DAG uses the same steps but hasn't been run under an actual Airflow scheduler yet.
 
 ## Tech Stack
 
@@ -61,7 +61,8 @@ The mart, `mart_cx_kpi_rollup`, joins all of these on `msisdn` and aggregates to
 - [x] Airflow DAG scheduling the run
 - [x] Data quality tests (uniqueness, not-null on join keys)
 - [x] README + architecture doc
-- [ ] Verify the pipeline actually runs end-to-end in a real environment (not yet done — see Status)
+- [x] Verify the pipeline actually runs end-to-end in a real environment
+- [ ] Run the Airflow DAG under an actual scheduler (only run via `run_pipeline.py` so far)
 - [ ] Add accepted-values / relationship tests beyond uniqueness and not-null
 
 ---
