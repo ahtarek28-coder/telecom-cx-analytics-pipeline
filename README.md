@@ -67,7 +67,10 @@ The mart, `mart_cx_kpi_rollup`, joins all of these on `msisdn` and aggregates to
 
 ---
 
+### Related projects
+
+- [dqcheck](https://github.com/ahtarek28-coder/data-quality-toolkit) — a standalone data quality checking library/CLI; verified against this project's own DuckDB database (all checks pass).
+
 ### Other planned portfolio projects (not yet scaffolded)
 
 - **Streaming KPI demo** — Kafka + Spark, real-time network KPI aggregation instead of batch.
-- **Data quality framework** — a small reusable library/CLI for the kind of join-fan-out and grain checks documented in `data-engineering-skills`.
