@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw synthetic tables loaded from data/raw/*.csv by data_generator/load_to_duckdb.py
+    schema: raw
+    tables:
+      - name: subscribers
+        description: Subscriber base snapshot -- one row per msisdn as of the base snapshot date.
+      - name: device_location
+        description: Device location dimension -- one row per msisdn, current-state (no dt).
+      - name: network_voice
+        description: Voice network performance -- one row per msisdn as of the network snapshot date.
+      - name: network_data
+        description: Data network performance -- one row per msisdn as of the network snapshot date.
+      - name: complaints
+        description: Complaint tickets -- event log, multiple rows possible per msisdn.
+      - name: churn_label
+        description: Churned subscribers as of the churn snapshot date -- only churned msisdns appear.

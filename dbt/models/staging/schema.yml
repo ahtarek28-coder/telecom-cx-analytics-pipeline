@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: stg_subscribers
+    description: One row per subscriber, base snapshot.
+    columns:
+      - name: msisdn
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_device_location
+    description: One row per subscriber's device location -- dimension, no dt. A join on this without a uniqueness guarantee is exactly the fan-out risk documented in data-engineering-skills.
+    columns:
+      - name: msisdn
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_network_voice
+    description: One row per subscriber with voice KPIs, latest network snapshot (not every subscriber has coverage).
+    columns:
+      - name: msisdn
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_network_data
+    description: One row per subscriber with data KPIs, latest network snapshot (not every subscriber has coverage).
+    columns:
+      - name: msisdn
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_complaints
+    description: Complaint ticket event log -- deliberately not tested for uniqueness on msisdn, since multiple tickets per subscriber are valid.
+
+  - name: stg_churn
+    description: One row per churned subscriber, churn snapshot date.
+    columns:
+      - name: msisdn
+        tests:
+          - unique
+          - not_null

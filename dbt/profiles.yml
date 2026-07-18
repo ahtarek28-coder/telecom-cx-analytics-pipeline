@@ -1,0 +1,7 @@
+telecom_cx_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../telecom_cx.duckdb"
+      threads: 4

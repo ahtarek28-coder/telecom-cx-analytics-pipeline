@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: mart_cx_kpi_rollup
+    description: >
+      Segmented CX KPI rollup blending subscriber base, network performance,
+      technical complaints, and churn. Grain is (site_id, screen_type,
+      p_segment, sr_classification, tenure_bucket). See
+      docs/architecture.md and data-engineering-skills for the
+      multi-snapshot-alignment design this replicates.
+    columns:
+      - name: total_subs
+        tests:
+          - not_null
