@@ -3,5 +3,8 @@ telecom_cx_analytics:
   outputs:
     dev:
       type: duckdb
-      path: "../telecom_cx.duckdb"
+      # Absolute path via env var -- avoids relative-path resolution being
+      # dependent on dbt's invocation cwd (bit us once locally, would bite
+      # again under Airflow, which runs tasks from its own temp directory).
+      path: "{{ env_var('TELECOM_CX_DB_PATH', '../telecom_cx.duckdb') }}"
       threads: 4

@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DBT_DIR = ROOT / "dbt"
+DB_PATH = ROOT / "telecom_cx.duckdb"
 
 
 def find_dbt():
@@ -34,9 +35,9 @@ def find_dbt():
     return "dbt"
 
 
-def run(cmd, cwd=None):
+def run(cmd, cwd=None, env=None):
     print(f"\n$ {' '.join(str(c) for c in cmd)}")
-    result = subprocess.run(cmd, cwd=cwd)
+    result = subprocess.run(cmd, cwd=cwd, env=env)
     if result.returncode != 0:
         sys.exit(result.returncode)
 
@@ -44,9 +45,17 @@ def run(cmd, cwd=None):
 def main():
     run([sys.executable, "data_generator/generate_data.py"], cwd=ROOT)
     run([sys.executable, "data_generator/load_to_duckdb.py"], cwd=ROOT)
+
     dbt_cmd = find_dbt()
-    run([dbt_cmd, "run", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR)])
-    run([dbt_cmd, "test", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR)])
+    dbt_env = {**os.environ, "TELECOM_CX_DB_PATH": str(DB_PATH)}
+    run(
+        [dbt_cmd, "run", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR)],
+        env=dbt_env,
+    )
+    run(
+        [dbt_cmd, "test", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR)],
+        env=dbt_env,
+    )
     print("\nDone. Query the result, e.g.:")
     print(
         "  python -c \"import duckdb; "

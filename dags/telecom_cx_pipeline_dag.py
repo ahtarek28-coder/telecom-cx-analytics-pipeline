@@ -7,6 +7,7 @@ single shared "today" -- the multi-snapshot-alignment pattern documented in
 data-engineering-skills. Requires apache-airflow (see ../requirements-airflow.txt)
 and the project's own requirements to be installed in the Airflow environment.
 """
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -15,6 +16,12 @@ from airflow.operators.bash import BashOperator
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DBT_DIR = PROJECT_ROOT / "dbt"
+DB_PATH = PROJECT_ROOT / "telecom_cx.duckdb"
+
+# Airflow runs BashOperator tasks from their own temp working directory, so
+# the duckdb path in dbt/profiles.yml can't rely on a relative path -- pass
+# it explicitly instead (see the "{{ env_var(...) }}" in profiles.yml).
+DBT_ENV = {**os.environ, "TELECOM_CX_DB_PATH": str(DB_PATH)}
 
 with DAG(
     dag_id="telecom_cx_analytics_pipeline",
@@ -38,11 +45,13 @@ with DAG(
     dbt_run = BashOperator(
         task_id="dbt_run",
         bash_command=f"dbt run --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        env=DBT_ENV,
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
         bash_command=f"dbt test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        env=DBT_ENV,
     )
 
     generate_data >> load_to_duckdb >> dbt_run >> dbt_test
