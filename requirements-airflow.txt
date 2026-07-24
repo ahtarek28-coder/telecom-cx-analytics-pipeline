@@ -1,3 +1,6 @@
-# Only needed to actually run dags/telecom_cx_pipeline_dag.py under Airflow.
-# The core pipeline (run_pipeline.py) does not require this.
+# Only needed to actually run dags/telecom_cx_pipeline_dag.py under Airflow,
+# and only in Airflow's OWN venv -- see the "Running under Airflow" section
+# of README.md for why (dbt-core/Airflow dependency conflicts) and for the
+# constraints-file install command Airflow itself recommends over a bare
+# version pin like this one.
 apache-airflow>=2.9,<3.0

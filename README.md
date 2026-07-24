@@ -34,11 +34,31 @@ python -c "import duckdb; print(duckdb.connect('telecom_cx.duckdb').sql('select 
 
 ### Running under Airflow (optional)
 
+Airflow and dbt-core are known to conflict on pinned transitive dependencies, so install them into **separate venvs**: this project's own `.venv` (per "How to Run" above) stays as-is, and Airflow gets its own, e.g. `~/airflow-venv`. The DAG (`dags/telecom_cx_pipeline_dag.py`) calls this project's `python`/`dbt` by absolute path (`<project>/.venv/bin/...`), not whatever's on Airflow's own PATH — override the location via the `PIPELINE_VENV_BIN` env var if your venv isn't a sibling `.venv` of this project.
+
 ```bash
-pip install -r requirements-airflow.txt
+python3 -m venv ~/airflow-venv
+source ~/airflow-venv/bin/activate
+pip install --upgrade pip
+
+AIRFLOW_VERSION=2.10.4
+PYTHON_VERSION="$(python3 --version | cut -d' ' -f2 | cut -d. -f1-2)"
+CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
+
+export AIRFLOW_HOME=~/airflow
+airflow db migrate
+airflow users create --username admin --password admin \
+  --firstname Admin --lastname User --role Admin --email you@example.com
+
+mkdir -p "$AIRFLOW_HOME/dags"
+ln -s "$(pwd)/../telecom-cx-analytics-pipeline/dags/telecom_cx_pipeline_dag.py" "$AIRFLOW_HOME/dags/"
+
+airflow webserver --port 8080 &
+airflow scheduler &
 ```
 
-Point your `AIRFLOW_HOME`'s `dags/` folder at (or symlink) `dags/telecom_cx_pipeline_dag.py`, then trigger `telecom_cx_analytics_pipeline` from the Airflow UI/CLI.
+Then trigger `telecom_cx_analytics_pipeline` from the Airflow UI (`http://<host>:8080`) or `airflow dags trigger telecom_cx_analytics_pipeline`.
 
 ## Data Model
 

@@ -18,6 +18,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DBT_DIR = PROJECT_ROOT / "dbt"
 DB_PATH = PROJECT_ROOT / "telecom_cx.duckdb"
 
+# Airflow and dbt-core are known to conflict on pinned transitive
+# dependencies (packaging, click, SQLAlchemy, ...), so the pipeline's own
+# deps (pandas, duckdb, dbt-duckdb) are expected to live in a SEPARATE venv
+# from Airflow's own -- not the venv Airflow itself is running in. Point
+# this at that venv's bin/ directory; override via PIPELINE_VENV_BIN if
+# it isn't a sibling ".venv" of this project (e.g. a differently-named or
+# differently-located venv).
+PIPELINE_VENV_BIN = Path(os.environ.get("PIPELINE_VENV_BIN", PROJECT_ROOT / ".venv" / "bin"))
+PYTHON_BIN = PIPELINE_VENV_BIN / "python"
+DBT_BIN = PIPELINE_VENV_BIN / "dbt"
+
 # Airflow runs BashOperator tasks from their own temp working directory, so
 # the duckdb path in dbt/profiles.yml can't rely on a relative path -- pass
 # it explicitly instead (see the "{{ env_var(...) }}" in profiles.yml).
@@ -34,23 +45,23 @@ with DAG(
 
     generate_data = BashOperator(
         task_id="generate_synthetic_data",
-        bash_command=f"python {PROJECT_ROOT / 'data_generator' / 'generate_data.py'}",
+        bash_command=f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'generate_data.py'}",
     )
 
     load_to_duckdb = BashOperator(
         task_id="load_raw_to_duckdb",
-        bash_command=f"python {PROJECT_ROOT / 'data_generator' / 'load_to_duckdb.py'}",
+        bash_command=f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'load_to_duckdb.py'}",
     )
 
     dbt_run = BashOperator(
         task_id="dbt_run",
-        bash_command=f"dbt run --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        bash_command=f"{DBT_BIN} run --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
         env=DBT_ENV,
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=f"dbt test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        bash_command=f"{DBT_BIN} test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
         env=DBT_ENV,
     )
 
