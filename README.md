@@ -6,7 +6,7 @@ Built as a generalized, public-data version of real reporting patterns from tele
 
 ## Status
 
-Verified end-to-end locally: `python run_pipeline.py` generates the synthetic data, loads it into DuckDB, and runs `dbt run` (7/7 models built) and `dbt test` (11/11 tests passed). The Airflow DAG uses the same steps but hasn't been run under an actual Airflow scheduler yet.
+Verified end-to-end both ways: `python run_pipeline.py` locally (7/7 dbt models built, 11/11 tests passed), and as a real, scheduled Airflow DAG (`telecom_cx_analytics_pipeline`) running on a dedicated Linux server — all four tasks (`generate_synthetic_data` → `load_raw_to_duckdb` → `dbt_run` → `dbt_test`) complete successfully under the actual Airflow scheduler/webserver, not just via the DAG file being present.
 
 ## Tech Stack
 
@@ -82,7 +82,7 @@ The mart, `mart_cx_kpi_rollup`, joins all of these on `msisdn` and aggregates to
 - [x] Data quality tests (uniqueness, not-null on join keys)
 - [x] README + architecture doc
 - [x] Verify the pipeline actually runs end-to-end in a real environment
-- [ ] Run the Airflow DAG under an actual scheduler (only run via `run_pipeline.py` so far)
+- [x] Run the Airflow DAG under an actual scheduler
 - [ ] Add accepted-values / relationship tests beyond uniqueness and not-null
 
 ---
