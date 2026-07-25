@@ -17,9 +17,14 @@ dbt (models/marts/mart_cx_kpi_rollup.sql)
         v
 dbt test
         |  uniqueness/not-null checks on every staging model's join key
+        v
+dqcheck (dq_checks.yml)
+        |  accepted-values + relationship checks, from a separate project
+        |  (github.com/ahtarek28-coder/data-quality-toolkit) rather than
+        |  duplicated in dbt's own schema.yml
 ```
 
-Orchestration: `run_pipeline.py` runs all four steps locally with no scheduler. `dags/telecom_cx_pipeline_dag.py` wraps the same four steps as an Airflow DAG for scheduled runs.
+Orchestration: `run_pipeline.py` runs all five steps locally with no scheduler. `dags/telecom_cx_pipeline_dag.py` wraps the same five steps as an Airflow DAG for scheduled runs.
 
 ## Multi-snapshot alignment
 
@@ -41,4 +46,6 @@ These constants live at the top of `data_generator/generate_data.py`.
 
 ## Data quality tests
 
-`dbt test` runs `unique` + `not_null` on the join key of every staging model except `stg_complaints` (see above), plus a `not_null` check on `total_subs` in the mart. Extending this — e.g. accepted-values tests on `screen_type`/`p_segment`, a relationship test from `churn_label` back to `subscribers` — is a natural next step.
+`dbt test` runs `unique` + `not_null` on the join key of every staging model except `stg_complaints` (see above), plus a `not_null` check on `total_subs` in the mart.
+
+Accepted-values and relationship checks (e.g. `screen_type`/`p_segment` staying within their known categories, `churn_label`/`complaints` not referencing a `msisdn` that doesn't exist in `subscribers`) are handled by [dqcheck](https://github.com/ahtarek28-coder/data-quality-toolkit) instead of dbt's own `schema.yml` -- see `dq_checks.yml` at the project root. This is a deliberate choice to reuse a separate portfolio project rather than duplicate the same logic in two places; dqcheck's `relationships` check is exactly the orphan-foreign-key check, and its `accepted_values` check is exactly the categorical-value check.

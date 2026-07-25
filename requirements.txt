@@ -2,3 +2,4 @@ dbt-duckdb>=1.8,<1.9
 duckdb>=1.0,<1.1
 pandas>=2.0
 numpy>=1.24
+dqcheck @ git+https://github.com/ahtarek28-coder/data-quality-toolkit.git

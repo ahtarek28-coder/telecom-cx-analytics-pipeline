@@ -56,6 +56,10 @@ def main():
         [dbt_cmd, "test", "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR)],
         env=dbt_env,
     )
+    run(
+        [sys.executable, "-m", "dqcheck.cli", "run", "--config", "dq_checks.yml"],
+        cwd=ROOT,
+    )
     print("\nDone. Query the result, e.g.:")
     print(
         "  python -c \"import duckdb; "

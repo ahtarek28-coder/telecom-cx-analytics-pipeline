@@ -34,6 +34,8 @@ DBT_BIN = PIPELINE_VENV_BIN / "dbt"
 # it explicitly instead (see the "{{ env_var(...) }}" in profiles.yml).
 DBT_ENV = {**os.environ, "TELECOM_CX_DB_PATH": str(DB_PATH)}
 
+DQ_CHECKS_CONFIG = PROJECT_ROOT / "dq_checks.yml"
+
 with DAG(
     dag_id="telecom_cx_analytics_pipeline",
     description="Generate synthetic telecom CX data and build the KPI rollup mart",
@@ -65,4 +67,14 @@ with DAG(
         env=DBT_ENV,
     )
 
-    generate_data >> load_to_duckdb >> dbt_run >> dbt_test
+    dq_check = BashOperator(
+        task_id="dq_check",
+        # dq_checks.yml's connection string is a relative path
+        # ("duckdb:///telecom_cx.duckdb"), which resolves against cwd --
+        # pin it to PROJECT_ROOT rather than relying on Airflow's default
+        # task working directory (the same class of bug fixed for dbt above).
+        bash_command=f"{PYTHON_BIN} -m dqcheck.cli run --config {DQ_CHECKS_CONFIG}",
+        cwd=str(PROJECT_ROOT),
+    )
+
+    generate_data >> load_to_duckdb >> dbt_run >> dbt_test >> dq_check

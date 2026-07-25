@@ -6,7 +6,7 @@ Built as a generalized, public-data version of real reporting patterns from tele
 
 ## Status
 
-Verified end-to-end both ways: `python run_pipeline.py` locally (7/7 dbt models built, 11/11 tests passed), and as a real, scheduled Airflow DAG (`telecom_cx_analytics_pipeline`) running on a dedicated Linux server — all four tasks (`generate_synthetic_data` → `load_raw_to_duckdb` → `dbt_run` → `dbt_test`) complete successfully under the actual Airflow scheduler/webserver, not just via the DAG file being present.
+Verified end-to-end both ways: `python run_pipeline.py` locally (7/7 dbt models built, 11/11 tests passed, 7/7 dqcheck checks passed), and as a real, scheduled Airflow DAG (`telecom_cx_analytics_pipeline`) running on a dedicated Linux server — all five tasks (`generate_synthetic_data` → `load_raw_to_duckdb` → `dbt_run` → `dbt_test` → `dq_check`) complete successfully under the actual Airflow scheduler/webserver, not just via the DAG file being present.
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 python run_pipeline.py
 ```
 
-This generates the synthetic CSVs, loads them into `telecom_cx.duckdb`, runs the dbt models, and runs the dbt tests. Query the result:
+This generates the synthetic CSVs, loads them into `telecom_cx.duckdb`, runs the dbt models, runs the dbt tests, and runs a [dqcheck](https://github.com/ahtarek28-coder/data-quality-toolkit) pass (`dq_checks.yml`) covering accepted-values and relationship checks that dbt's own `schema.yml` tests don't. Query the result:
 
 ```bash
 python -c "import duckdb; print(duckdb.connect('telecom_cx.duckdb').sql('select * from marts.mart_cx_kpi_rollup limit 10').df())"
@@ -83,7 +83,7 @@ The mart, `mart_cx_kpi_rollup`, joins all of these on `msisdn` and aggregates to
 - [x] README + architecture doc
 - [x] Verify the pipeline actually runs end-to-end in a real environment
 - [x] Run the Airflow DAG under an actual scheduler
-- [ ] Add accepted-values / relationship tests beyond uniqueness and not-null
+- [x] Add accepted-values / relationship tests beyond uniqueness and not-null (via dqcheck, not duplicated in dbt's schema.yml -- see `dq_checks.yml`)
 
 ---
 

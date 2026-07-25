@@ -1,0 +1,49 @@
+# dqcheck config for this project's own database. Run with:
+#   python -m dqcheck.cli run --config dq_checks.yml
+#
+# Closes the roadmap gap noted in README.md ("Add accepted-values /
+# relationship tests beyond uniqueness and not-null") -- deliberately using
+# dqcheck (a separate project: github.com/ahtarek28-coder/data-quality-toolkit)
+# instead of duplicating the same logic in dbt's schema.yml, as a concrete
+# example of reusing one portfolio project from another.
+
+connection: "duckdb:///telecom_cx.duckdb"
+
+checks:
+  - type: accepted_values
+    table: staging.stg_subscribers
+    column: line_type
+    values: [PP, PT]
+
+  - type: accepted_values
+    table: staging.stg_subscribers
+    column: screen_type
+    values: [Smartphone, "Feature Phone", Tablet, "IoT Device"]
+
+  - type: accepted_values
+    table: staging.stg_subscribers
+    column: p_segment
+    values: [Mass, "High Value", Youth, SOHO]
+
+  - type: accepted_values
+    table: staging.stg_complaints
+    column: sr_classification
+    values: [Technical, Billing, Other]
+
+  - type: relationships
+    child_table: staging.stg_churn
+    child_column: msisdn
+    parent_table: staging.stg_subscribers
+    parent_column: msisdn
+    name: churn_msisdn_exists_in_subscribers
+
+  - type: relationships
+    child_table: staging.stg_complaints
+    child_column: msisdn
+    parent_table: staging.stg_subscribers
+    parent_column: msisdn
+    name: complaint_msisdn_exists_in_subscribers
+
+  - type: not_null
+    table: marts.mart_cx_kpi_rollup
+    column: total_subs
