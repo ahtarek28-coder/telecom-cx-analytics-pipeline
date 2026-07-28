@@ -60,6 +60,8 @@ airflow scheduler &
 
 Then trigger `telecom_cx_analytics_pipeline` from the Airflow UI (`http://<host>:8080`) or `airflow dags trigger telecom_cx_analytics_pipeline`.
 
+Every task's output is also appended to a single running log at `logs/dag_runs.log` (in addition to Airflow's own per-task logs), timestamped and labeled per task — `tail -f logs/dag_runs.log` to watch a run live without going through the UI.
+
 ## Data Model
 
 | Table | Grain | Notes |

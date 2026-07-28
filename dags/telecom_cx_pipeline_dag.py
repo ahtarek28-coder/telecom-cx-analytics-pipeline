@@ -36,6 +36,22 @@ DBT_ENV = {**os.environ, "TELECOM_CX_DB_PATH": str(DB_PATH)}
 
 DQ_CHECKS_CONFIG = PROJECT_ROOT / "dq_checks.yml"
 
+# Every task's combined stdout/stderr is duplicated into one running log
+# file for the whole project (in addition to Airflow's own per-task logs)
+# via `tee -a`. `pipefail` is required here -- without it, a failing `cmd`
+# piped into `tee` (which itself succeeds) would report exit code 0 and
+# Airflow would never notice the task actually failed.
+LOG_FILE = PROJECT_ROOT / "logs" / "dag_runs.log"
+
+
+def with_logging(cmd: str, label: str) -> str:
+    return (
+        f'mkdir -p "{LOG_FILE.parent}" && '
+        f'echo "=== $(date -u +%Y-%m-%dT%H:%M:%SZ) [{label}] ===" >> "{LOG_FILE}" && '
+        f'set -o pipefail && ({cmd}) 2>&1 | tee -a "{LOG_FILE}"'
+    )
+
+
 with DAG(
     dag_id="telecom_cx_analytics_pipeline",
     description="Generate synthetic telecom CX data and build the KPI rollup mart",
@@ -47,23 +63,33 @@ with DAG(
 
     generate_data = BashOperator(
         task_id="generate_synthetic_data",
-        bash_command=f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'generate_data.py'}",
+        bash_command=with_logging(
+            f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'generate_data.py'}",
+            "generate_synthetic_data",
+        ),
     )
 
     load_to_duckdb = BashOperator(
         task_id="load_raw_to_duckdb",
-        bash_command=f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'load_to_duckdb.py'}",
+        bash_command=with_logging(
+            f"{PYTHON_BIN} {PROJECT_ROOT / 'data_generator' / 'load_to_duckdb.py'}",
+            "load_raw_to_duckdb",
+        ),
     )
 
     dbt_run = BashOperator(
         task_id="dbt_run",
-        bash_command=f"{DBT_BIN} run --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        bash_command=with_logging(
+            f"{DBT_BIN} run --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}", "dbt_run"
+        ),
         env=DBT_ENV,
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        bash_command=f"{DBT_BIN} test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}",
+        bash_command=with_logging(
+            f"{DBT_BIN} test --project-dir {DBT_DIR} --profiles-dir {DBT_DIR}", "dbt_test"
+        ),
         env=DBT_ENV,
     )
 
@@ -73,7 +99,9 @@ with DAG(
         # ("duckdb:///telecom_cx.duckdb"), which resolves against cwd --
         # pin it to PROJECT_ROOT rather than relying on Airflow's default
         # task working directory (the same class of bug fixed for dbt above).
-        bash_command=f"{PYTHON_BIN} -m dqcheck.cli run --config {DQ_CHECKS_CONFIG}",
+        bash_command=with_logging(
+            f"{PYTHON_BIN} -m dqcheck.cli run --config {DQ_CHECKS_CONFIG}", "dq_check"
+        ),
         cwd=str(PROJECT_ROOT),
     )
 
